@@ -115,6 +115,30 @@
             },
           },
         });
+
+        /* ------------------------------------------------------- */
+        /*  RECALCULATE SCROLL WIDTH AFTER LAYOUT SETTLES
+        /*  (swiper loop clones, typed.js, web fonts, images can
+        /*  all change content width slightly after mCustomScrollbar
+        /*  has already measured it, causing the next section to
+        /*  peek through / leak on the right)
+        /* ------------------------------------------------------- */
+        function refreshScrollbar() {
+          $("#wrapper").mCustomScrollbar("update");
+        }
+
+        setTimeout(refreshScrollbar, 600);
+        setTimeout(refreshScrollbar, 1500);
+        setTimeout(refreshScrollbar, 3000);
+
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(refreshScrollbar);
+        }
+
+        $(window).on("resize", function () {
+          clearTimeout(window._scrollbarResizeTimer);
+          window._scrollbarResizeTimer = setTimeout(refreshScrollbar, 300);
+        });
       } else {
         WOW = new WOW({
           boxClass: "wow",
@@ -243,33 +267,6 @@
     });
 
     /* ----------------------------------------------------------- */
-    /*  SWIPER LOGOS OF CLIENTS
-    /* ----------------------------------------------------------- */
-
-    const swiperclients = new Swiper(".swiper-clients", {
-      slidesPerView: 2,
-      loop: true,
-      breakpoints: {
-        320: {
-          slidesPerView: 1,
-        },
-        768: {
-          slidesPerView: 2,
-        },
-        1025: {
-          slidesPerView: 3,
-        },
-      },
-      spaceBetween: 50,
-      grabCursor: true,
-      pagination: {
-        el: ".swiper-pagination",
-        clickable: true,
-        type: "bullets",
-      },
-    });
-
-    /* ----------------------------------------------------------- */
     /*  SWIPER PORTFOLIO
     /* ----------------------------------------------------------- */
 
@@ -299,6 +296,7 @@
       var imageKey = $(this).data('inline-image');
       if (window.PORTFOLIO_IMAGE_ASSETS && window.PORTFOLIO_IMAGE_ASSETS[imageKey]) {
         $(this).attr('src', window.PORTFOLIO_IMAGE_ASSETS[imageKey]);
+        $(this).closest('a[data-inline-image-href]').attr('href', window.PORTFOLIO_IMAGE_ASSETS[imageKey]);
       }
     });
 
@@ -309,9 +307,20 @@
     function updateExperienceYears() {
       $(".experience-years").each(function () {
         var startYear = parseInt($(this).data("experience-start-year"), 10);
-        if (!Number.isNaN(startYear)) {
-          var years = Math.max(new Date().getFullYear() - startYear, 0);
-          $(this).text(years + "+ years");
+        var startMonth = parseInt($(this).data("experience-start-month"), 10);
+        if (!Number.isNaN(startYear) && !Number.isNaN(startMonth)) {
+          var today = new Date();
+          var currentYear = today.getFullYear();
+          var currentMonth = today.getMonth() + 1;
+
+          var totalMonths = (currentYear - startYear) * 12 + (currentMonth - startMonth);
+          totalMonths = Math.max(totalMonths, 0);
+
+          var fullYears = Math.floor(totalMonths / 12);
+          var remainderMonths = totalMonths % 12;
+          var decimalYears = (fullYears + remainderMonths / 12).toFixed(1);
+
+          $(this).text(decimalYears + "+ years");
         }
       });
     }
@@ -323,7 +332,7 @@
         "Senior BI Analyst",
         "Power BI Developer",
         "Embedded Analytics Specialist",
-        "AI Prompt Engineering Practitioner",
+        "Prompt Engineer",
       ],
       typeSpeed: 20,
       backSpeed: 20,
